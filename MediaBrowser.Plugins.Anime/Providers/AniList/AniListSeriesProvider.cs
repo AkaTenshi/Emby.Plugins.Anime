@@ -8,6 +8,7 @@ using MediaBrowser.Model.Logging;
 using MediaBrowser.Model.Providers;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -55,6 +56,31 @@ namespace MediaBrowser.Plugins.Anime.Providers.AniList
                 result.People = await _api.GetPersonInfo(WebContent.data.Media.id, cancellationToken);
                 result.Item.SetProviderId(ProviderNames.AniList, aid);
                 result.Item.Overview = WebContent.data.Media.description;
+                try
+                {
+                    StartDate startDate = WebContent.data.Media.startDate;
+                    DateTime date = new DateTime(startDate.year, startDate.month, startDate.day);
+                    date = date.ToUniversalTime();
+                    result.Item.PremiereDate = date;
+                    result.Item.ProductionYear = date.Year;
+                }
+                catch (Exception) { }
+                try
+                {
+                    EndDate endDate = WebContent.data.Media.endDate;
+                    DateTime date = new DateTime(endDate.year, endDate.month, endDate.day);
+                    date = date.ToUniversalTime();
+                    result.Item.EndDate = date;
+                    if (DateTime.Now.Date < date.Date)
+                    {
+                        result.Item.Status = SeriesStatus.Continuing;
+                    }
+                    else
+                    {
+                        result.Item.Status = SeriesStatus.Ended;
+                    }
+                }
+                catch (Exception) { }
                 try
                 {
                     //AniList has a max rating of 5
